@@ -1,0 +1,77 @@
+
+
+name: Jules Controller ARM64 CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jules-controller-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-arm64:
+    name: Linux ARM64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify ARM64
+        run: |
+          test "$(uname -m)" = "aarch64"
+          go version
+
+      - name: Check formatting
+        run: |
+          files=$(gofmt -l $(find . -name '*.go' -type f))
+          if [ -n "$files" ]; then
+            echo "$files"
+            exit 1
+          fi
+
+      - name: Test
+        run: |
+          if [ -n "$(find . -name '*.go' -type f)" ]; then
+            go test ./...
+          else
+            echo "No Go source files yet; skipping tests."
+          fi
+
+      - name: Vet
+        run: |
+          if [ -n "$(find . -name '*.go' -type f)" ]; then
+            go vet ./...
+          else
+            echo "No Go source files yet; skipping vet."
+          fi
+
+      - name: Build ARM64 binary
+        run: |
+          if [ -d cmd/jules-tui ]; then
+            mkdir -p dist
+            GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
+              go build -o dist/jules-tui ./cmd/jules-tui
+          else
+            echo "Application entry point not implemented yet."
+          fi
+
+      - name: Upload binary
+        if: hashFiles('dist/jules-tui') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jules-tui-linux-arm64
+          path: dist/jules-tui
+          retention-days: 14
