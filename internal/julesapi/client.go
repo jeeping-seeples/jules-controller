@@ -342,3 +342,49 @@ func normalizeResourceID(prefix, id string) string {
 	id = strings.TrimPrefix(id, prefix+"/")
 	return strings.TrimPrefix(id, "/")
 }
+
+// ListActivities lists activities for a session with optional pagination and createTime filter.
+func (c *Client) ListActivities(ctx context.Context, sessionID string, pageSize int, pageToken string, createTime string) (*ListActivitiesResponse, error) {
+	sessionID = normalizeResourceID("sessions", sessionID)
+	endpoint := fmt.Sprintf("/v1alpha/sessions/%s/activities", sessionID)
+
+	q := url.Values{}
+	if pageSize > 0 {
+		q.Set("pageSize", strconv.Itoa(pageSize))
+	}
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
+	if createTime != "" {
+		q.Set("createTime", createTime)
+	}
+
+	var rawResp struct {
+		Activities    []json.RawMessage `json:"activities"`
+		NextPageToken string            `json:"nextPageToken"`
+	}
+
+	if err := c.doRequest(ctx, http.MethodGet, endpoint, q, nil, &rawResp); err != nil {
+		return nil, err
+	}
+
+	resp := &ListActivitiesResponse{
+		NextPageToken: rawResp.NextPageToken,
+		Activities:    make([]Activity, 0, len(rawResp.Activities)),
+	}
+
+	for _, rawItem := range rawResp.Activities {
+		var act Activity
+		if err := json.Unmarshal(rawItem, &act); err != nil {
+			// Tolerant decoding: keep raw JSON even if parsing some fields fails
+			act = Activity{
+				ID:          "unknown",
+				Description: "Unable to parse activity",
+			}
+		}
+		act.RawJSON = string(rawItem)
+		resp.Activities = append(resp.Activities, act)
+	}
+
+	return resp, nil
+}

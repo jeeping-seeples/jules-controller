@@ -213,3 +213,46 @@ func TestCLINew(t *testing.T) {
 		t.Errorf("expected success output, got: %s", stdout.String())
 	}
 }
+
+func TestCLIShowWithActivities(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v1alpha/sessions/sess-act":
+			resp := julesapi.Session{
+				ID:    "sess-act",
+				Title: "Activity Session",
+				State: julesapi.StateCompleted,
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		case "/v1alpha/sessions/sess-act/activities":
+			resp := julesapi.ListActivitiesResponse{
+				Activities: []julesapi.Activity{
+					{
+						ID:          "act-99",
+						Originator:  "agent",
+						Description: "Activity 99",
+						AgentMessaged: &julesapi.AgentMessaged{
+							AgentMessage: "Here is your plan execution result",
+						},
+					},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	cfgPath := writeConfigFile(t, ts.URL, "dummy-key")
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"show", "sess-act", "--activities", "--config", cfgPath}, nil, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected code 0, got %d. stderr: %s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Activities:") || !strings.Contains(stdout.String(), "act-99") {
+		t.Errorf("expected activity in output, got: %s", stdout.String())
+	}
+}
