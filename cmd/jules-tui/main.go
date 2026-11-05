@@ -14,6 +14,10 @@ import (
 
 	"github.com/OWNER/jules-tui/internal/config"
 	"github.com/OWNER/jules-tui/internal/julesapi"
+	"github.com/OWNER/jules-tui/internal/notify"
+	"github.com/OWNER/jules-tui/internal/poller"
+	"github.com/OWNER/jules-tui/internal/tui"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
@@ -23,14 +27,15 @@ func main() {
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		printUsage(stderr)
-		return julesapi.ExitUsageError
+		return runTUI("", "", stderr)
 	}
 
 	subcommand := args[0]
 	subArgs := args[1:]
 
 	switch subcommand {
+	case "tui":
+		return runTUIWithArgs(subArgs, stderr)
 	case "sessions":
 		return runSessions(subArgs, stdout, stderr)
 	case "show":
@@ -55,9 +60,12 @@ func printUsage(w io.Writer) {
 	fmt.Fprintf(w, `jules-tui - CLI client for Google Jules
 
 Usage:
-  jules-tui <command> [arguments]
+  jules-tui [command] [arguments]
+
+If no command is provided, the interactive TUI home screen launches.
 
 Commands:
+  tui               Launch interactive terminal UI
   sessions [--json] [--state STATE] [--page-size N]
       List sessions for the authenticated user
 
@@ -88,7 +96,6 @@ Exit codes:
 }
 
 // splitPositionalAndFlags reorganizes args so flags come before positional arguments.
-// This allows Go's standard flag package to parse flags even if positional args like session-id are passed first.
 func splitPositionalAndFlags(args []string) ([]string, []string) {
 	var flags []string
 	var positionals []string
@@ -97,14 +104,11 @@ func splitPositionalAndFlags(args []string) ([]string, []string) {
 		arg := args[i]
 		if strings.HasPrefix(arg, "-") {
 			flags = append(flags, arg)
-			// If flag is not a boolean flag like --json or --require-approval or --auto-pr,
-			// and has no '=', check if next element is its value
 			if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-				// List of known boolean flags
 				flagName := strings.TrimLeft(arg, "-")
 				switch flagName {
 				case "json", "require-approval", "auto-pr", "h", "help":
-					// boolean, no argument
+					// boolean
 				default:
 					flags = append(flags, args[i+1])
 					i++
@@ -143,6 +147,47 @@ func handleError(err error, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stderr, "Error: %v\n", err)
 	return julesapi.ExitGeneralError
+}
+
+func runTUIWithArgs(args []string, stderr io.Writer) int {
+	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+
+	var configPath string
+	var apiKey string
+
+	fs.StringVar(&configPath, "config", "", "Path to config TOML file")
+	fs.StringVar(&apiKey, "api-key", "", "API key override")
+
+	flags, _ := splitPositionalAndFlags(args)
+	if err := fs.Parse(flags); err != nil {
+		return julesapi.ExitUsageError
+	}
+
+	return runTUI(configPath, apiKey, stderr)
+}
+
+func runTUI(configPath, apiKey string, stderr io.Writer) int {
+	client, err := createClient(configPath, apiKey)
+	if err != nil {
+		return handleError(err, stderr)
+	}
+
+	store, err := notify.NewStore("")
+	if err != nil {
+		return handleError(err, stderr)
+	}
+	notifier := notify.NewNotifier(store)
+	p := poller.New(client, notifier, poller.DefaultConfig())
+
+	model := tui.NewModel(p)
+	program := tea.NewProgram(model, tea.WithAltScreen())
+
+	if _, err := program.Run(); err != nil {
+		fmt.Fprintf(stderr, "Error running TUI: %v\n", err)
+		return julesapi.ExitGeneralError
+	}
+	return julesapi.ExitSuccess
 }
 
 func runSessions(args []string, stdout, stderr io.Writer) int {

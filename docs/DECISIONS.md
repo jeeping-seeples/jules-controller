@@ -39,3 +39,27 @@ Record decisions here with date, context, decision, and consequences.
 - **Credentials**:
   - API key precedence: `--api-key` flag > `JULES_API_KEY` env var > `config.toml`.
   - Transmitted exclusively via `x-goog-api-key` header, never in query string, never logged.
+
+## Milestone 2 Decisions
+
+- **Charm ecosystem**:
+  - Added `github.com/charmbracelet/bubbletea` v1.3.4, `github.com/charmbracelet/lipgloss` v1.0.0, and `github.com/charmbracelet/bubbles` v0.20.0.
+- **TUI & CLI integration**:
+  - Launching `jules-tui` without arguments (or with `jules-tui tui`) launches the interactive Home screen.
+  - Scriptable subcommands (`sessions`, `show`, `send`, `approve`, `new`) continue to operate non-interactively.
+- **Grouping & Urgency Triage**:
+  - Grouped by repository/source name (`owner/repo`), with fallback to `Repoless / Unknown`.
+  - Triage levels: UrgencyHigh (`AWAITING_PLAN_APPROVAL`, `AWAITING_USER_FEEDBACK`), UrgencyMedium (`IN_PROGRESS`, `PLANNING`, `QUEUED`), UrgencyLow (`PAUSED`, `COMPLETED`, `FAILED`).
+  - High urgency sessions are prioritized and sorted at top within each group.
+  - "Needs Me" filter toggle (`tab` or `n`) isolates sessions requiring human action.
+- **Collapse/Expand**:
+  - Groups can be collapsed or expanded with `space` or `enter`.
+- **Notifications**:
+  - Persistent state saved to XDG state path `~/.local/state/jules-tui/notifications.json`.
+  - Transitions notify only once.
+  - Notifier emits terminal bell `\a` and best-effort OS notification (`osascript` on macOS, `notify-send` on Linux).
+- **Adaptive Polling**:
+  - Configurable 30s base interval with exponential backoff on 429/5xx and network errors up to 5m cap.
+  - Respects cancellation and runs asynchronously outside the Bubble Tea View/Update thread.
+- **NO_COLOR**:
+  - Clean text and styling fallback when `NO_COLOR` is detected in environment.
