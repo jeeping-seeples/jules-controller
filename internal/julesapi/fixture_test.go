@@ -100,3 +100,35 @@ func TestFixturesAndTolerantParsing(t *testing.T) {
 		t.Fatalf("ApprovePlan error: %v", err)
 	}
 }
+
+func TestListActivitiesFixture(t *testing.T) {
+	activitiesData, err := os.ReadFile("../../testdata/activities_list.json")
+	if err != nil {
+		t.Fatalf("failed to read fixture: %v", err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/v1alpha/sessions/1234567/activities" {
+			_, _ = w.Write(activitiesData)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, "test-key")
+	resp, err := client.ListActivities(context.Background(), "1234567", 10, "", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Activities) != 3 {
+		t.Fatalf("expected 3 activities, got %d", len(resp.Activities))
+	}
+	if resp.Activities[1].PlanGenerated == nil || len(resp.Activities[1].PlanGenerated.Plan.Steps) != 1 {
+		t.Errorf("expected plan step in activity 2, got %+v", resp.Activities[1])
+	}
+	if len(resp.Activities[2].Artifacts) == 0 || resp.Activities[2].Artifacts[0].ChangeSet == nil {
+		t.Errorf("expected changeSet artifact in activity 3, got %+v", resp.Activities[2])
+	}
+}

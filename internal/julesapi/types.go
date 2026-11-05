@@ -119,3 +119,111 @@ type ListSourcesResponse struct {
 	Sources       []Source `json:"sources,omitempty"`
 	NextPageToken string   `json:"nextPageToken,omitempty"`
 }
+
+// PlanStep represents a step in a plan.
+type PlanStep struct {
+	ID          string `json:"id,omitempty"`
+	Index       int    `json:"index,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+// Plan represents a sequence of steps.
+type Plan struct {
+	ID         string     `json:"id,omitempty"`
+	Steps      []PlanStep `json:"steps,omitempty"`
+	CreateTime *time.Time `json:"createTime,omitempty"`
+}
+
+// PlanGenerated represents a plan generation event.
+type PlanGenerated struct {
+	Plan *Plan `json:"plan,omitempty"`
+}
+
+// PlanApproved represents a plan approval event.
+type PlanApproved struct {
+	PlanID string `json:"planId,omitempty"`
+}
+
+// UserMessaged represents a message from the user.
+type UserMessaged struct {
+	UserMessage string `json:"userMessage,omitempty"`
+}
+
+// AgentMessaged represents a message from Jules.
+type AgentMessaged struct {
+	AgentMessage string `json:"agentMessage,omitempty"`
+}
+
+// ProgressUpdated represents a progress status update.
+type ProgressUpdated struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+// SessionCompleted represents session completion.
+type SessionCompleted struct{}
+
+// SessionFailed represents session failure.
+type SessionFailed struct {
+	Reason string `json:"reason,omitempty"`
+}
+
+// GitPatch represents git diff patch details.
+type GitPatch struct {
+	BaseCommitID           string `json:"baseCommitId,omitempty"`
+	UnidiffPatch           string `json:"unidiffPatch,omitempty"`
+	SuggestedCommitMessage string `json:"suggestedCommitMessage,omitempty"`
+}
+
+// ChangeSet represents a change set artifact.
+type ChangeSet struct {
+	Source   string    `json:"source,omitempty"`
+	GitPatch *GitPatch `json:"gitPatch,omitempty"`
+}
+
+// BashOutput represents bash command output artifact.
+type BashOutput struct {
+	Command  string `json:"command,omitempty"`
+	Output   string `json:"output,omitempty"`
+	ExitCode int    `json:"exitCode,omitempty"`
+}
+
+// Media represents a media file artifact.
+type Media struct {
+	MimeType string `json:"mimeType,omitempty"`
+	Data     string `json:"data,omitempty"`
+}
+
+// Artifact represents an output artifact produced by an activity.
+type Artifact struct {
+	ChangeSet  *ChangeSet  `json:"changeSet,omitempty"`
+	BashOutput *BashOutput `json:"bashOutput,omitempty"`
+	Media      *Media      `json:"media,omitempty"`
+}
+
+// Activity represents an event within a session.
+type Activity struct {
+	Name             string            `json:"name,omitempty"`
+	ID               string            `json:"id,omitempty"`
+	Originator       string            `json:"originator,omitempty"`
+	Description      string            `json:"description,omitempty"`
+	CreateTime       *time.Time        `json:"createTime,omitempty"`
+	Artifacts        []Artifact        `json:"artifacts,omitempty"`
+	PlanGenerated    *PlanGenerated    `json:"planGenerated,omitempty"`
+	PlanApproved     *PlanApproved     `json:"planApproved,omitempty"`
+	UserMessaged     *UserMessaged     `json:"userMessaged,omitempty"`
+	AgentMessaged    *AgentMessaged    `json:"agentMessaged,omitempty"`
+	ProgressUpdated  *ProgressUpdated  `json:"progressUpdated,omitempty"`
+	SessionCompleted *SessionCompleted `json:"sessionCompleted,omitempty"`
+	SessionFailed    *SessionFailed    `json:"sessionFailed,omitempty"`
+
+	// RawJSON stores raw activity JSON for unknown activity types
+	RawJSON string `json:"-"`
+}
+
+// ListActivitiesResponse represents the response from GET /v1alpha/sessions/{id}/activities.
+type ListActivitiesResponse struct {
+	Activities    []Activity `json:"activities,omitempty"`
+	NextPageToken string     `json:"nextPageToken,omitempty"`
+}

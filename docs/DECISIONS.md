@@ -63,3 +63,16 @@ Record decisions here with date, context, decision, and consequences.
   - Respects cancellation and runs asynchronously outside the Bubble Tea View/Update thread.
 - **NO_COLOR**:
   - Clean text and styling fallback when `NO_COLOR` is detected in environment.
+
+## Milestone 3 Decisions
+
+- **Rendering & Markdown**:
+  - Glamour (`github.com/charmbracelet/glamour`) used for terminal Markdown rendering with word wrapping.
+  - Plaintext fallback when `NO_COLOR` is present.
+  - Diff rendering highlights additions (green), deletions (red), and hunk markers (cyan), with plain text fallback on `NO_COLOR`.
+- **Viewport & Navigation**:
+  - `bubbles/viewport` used in Session Detail view for efficient scrollable buffer of transcript.
+  - Navigation between Home and Detail: `Enter` on session row opens detail; `Esc`, `Backspace`, or `h` returns home.
+  - Detail keyboard toggles: `d` for diff expansion/collapse, `v` or `o` for raw JSON inspection of activities, `r` for refresh.
+- **CLI show enhancement**:
+  - Added `--activities` and `--diffs` flags to `jules-tui show <session>` to print transcript and diffs to stdout or structured JSON.
