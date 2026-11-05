@@ -1,0 +1,10 @@
+{
+  "name": "sessions/1234567",
+  "id": "abc123",
+  "prompt": "Add comprehensive unit tests for the authentication module",
+  "title": "Add auth tests",
+  "state": "QUEUED",
+  "url": "https://jules.google.com/session/abc123",
+  "createTime": "2024-01-15T10:30:00Z",
+  "updateTime": "2024-01-15T10:30:00Z"
+}

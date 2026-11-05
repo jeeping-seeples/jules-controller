@@ -1,0 +1,22 @@
+{
+  "sessions": [
+    {
+      "name": "sessions/1234567",
+      "id": "abc123",
+      "title": "Add auth tests",
+      "state": "COMPLETED",
+      "createTime": "2024-01-15T10:30:00Z",
+      "updateTime": "2024-01-15T11:45:00Z",
+      "unknownFutureField": "should be safely ignored"
+    },
+    {
+      "name": "sessions/8901234",
+      "id": "def456",
+      "title": "Fix login bug",
+      "state": "AWAITING_PLAN_APPROVAL",
+      "createTime": "2024-01-16T08:00:00Z",
+      "updateTime": "2024-01-16T08:05:00Z"
+    }
+  ],
+  "nextPageToken": "eyJvZmZzZXQiOjEwfQ=="
+}

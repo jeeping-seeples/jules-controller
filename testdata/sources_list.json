@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {
+      "name": "sources/github-myorg-myrepo",
+      "id": "github-myorg-myrepo",
+      "githubRepo": {
+        "owner": "myorg",
+        "repo": "myrepo",
+        "isPrivate": false,
+        "defaultBranch": {
+          "displayName": "main"
+        },
+        "branches": [
+          { "displayName": "main" },
+          { "displayName": "develop" }
+        ]
+      }
+    }
+  ],
+  "nextPageToken": ""
+}
